@@ -6,9 +6,16 @@ const dotenv = require('dotenv')
 dotenv.config()
 
 const token = process.env.DISCORD_TOKEN
+const api_url = process.env.OLLAMA_API_URL
 
 // Create a new client instance
-const client = new Client({ intents: [GatewayIntentBits.Guilds] })
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+  ],
+})
 
 // Commands
 client.commands = new Collection()
@@ -60,6 +67,43 @@ client.on(Events.InteractionCreate, async (interaction) => {
         ephemeral: true,
       })
     }
+  }
+})
+
+// read messages
+client.on('messageCreate', async (message) => {
+  if (message.author.bot) return
+
+  if (message.channel.type === 11) {
+    // get message history
+    const messages = await message.channel.messages.fetch({ limit: 50 }) // Adjust the limit as needed
+    const model = message.channel.name.split('#')[0]
+
+    const messageHistory = messages
+      .map((msg) => ({
+        role: msg.author.bot ? 'assistant' : 'user',
+        content: msg.content,
+      }))
+      .reverse() // Reverse to maintain chronological order
+
+    fetch(api_url + '/api/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: model,
+        messages: messageHistory,
+        stream: false,
+      }),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        message.channel.send(data.message.content)
+      })
+      .catch((error) => {
+        console.error('Error:', error)
+      })
   }
 })
 
