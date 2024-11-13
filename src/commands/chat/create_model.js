@@ -16,22 +16,24 @@ module.exports = {
     .addStringOption((option) =>
       option
         .setName('from')
-        .setDescription('A model available in `/list-models`')
+        .setDescription(
+          'A model available in /list-models or in https://ollama.com/search'
+        )
         .setRequired(true)
     )
     .addStringOption((option) =>
       option
-        .setName('system-prompt')
-        .setDescription('The prompt used to define the model')
-        .setRequired(true)
+        .setName('modelfile')
+        .setDescription(
+          'Model file (see https://github.com/ollama/ollama/blob/main/docs/modelfile.md)'
+        )
     ),
   async execute(interaction) {
     const name = interaction.options.getString('name')
     const from = interaction.options.getString('from')
-    const system_prompt = interaction.options.getString('system-prompt')
+    const modelfile = interaction.options.getString('modelfile')
 
-    const modelfile = `FROM ${from}\nSYSTEM ${system_prompt}`
-    console.log(modelfile)
+    const final_modelfile = `FROM ${from}\n${modelfile}`
 
     await interaction.reply('Creating model...')
 
@@ -42,7 +44,7 @@ module.exports = {
       },
       body: JSON.stringify({
         name: name,
-        modelfile: modelfile,
+        modelfile: final_modelfile,
       }),
     }).then((response) => {
       const reader = response.body.getReader()

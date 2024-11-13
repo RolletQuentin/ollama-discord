@@ -1,0 +1,5 @@
+services:
+  discord_bot:
+    build: .
+    image: ollama_discord_bot
+    restart: unless-stopped
